@@ -32,7 +32,8 @@ class Sheet(object):
 
     """
 
-    def __init__(self, specification, drawing_callable, pages_to_draw=None, border=False, shade_missing=False):
+    def __init__(self, specification, drawing_callable, pages_to_draw=None,
+            border=False, shade_missing=False, direction="across"):
         """
         Parameters
         ----------
@@ -57,6 +58,8 @@ class Sheet(object):
             ReportLab colour is given, the labels will be shaded in that colour.
             A value of True will result in the missing labels being shaded in
             the hex colour 0xBBBBBB (a medium-light grey).
+        direction: String, either "across" or "down" to indication the order
+            labels will be assigned. Default is across.
 
         Notes
         -----
@@ -96,10 +99,14 @@ class Sheet(object):
 
         # Page information.
         self._pagesize = (float(self.specs.sheet_width*mm), float(self.specs.sheet_height*mm))
-        self._numlabels = [self.specs.rows, self.specs.columns]
-        self._position = [1, 0]
+        self._numlabels = (self.specs.rows, self.specs.columns)
+        self._position = None
         self.label_count = 0
         self.page_count = 0
+        if direction == "vertical":
+            self._positionIteratorFunc = specification.verticalPosIterator()
+        else:
+            self._positionIteratorFunc = specification.horizontalPosIterator()
 
         # Background image.
         if self.specs.background_image:
@@ -247,7 +254,8 @@ class Sheet(object):
             self._current_page.add(self._bgimage)
         self._pages.append(self._current_page)
         self.page_count += 1
-        self._position = [1, 0]
+        self._positionIterator = self._positionIteratorFunc()
+        self._position = None
 
     def _next_label(self):
         """Helper method to move to the next label. Not intended for external use.
@@ -266,12 +274,10 @@ class Sheet(object):
             self._new_page()
 
         # Filled up a row.
-        elif self._position[1] == self.specs.columns:
-            self._position[0] += 1
-            self._position[1] = 0
-
-        # Move to the next column.
-        self._position[1] += 1
+        try:
+            self._position = next(self._positionIterator)
+        except StopIteration:
+            self._new_page()
 
     def _next_unused_label(self):
         """Helper method to move to the next unused label. Not intended for external use.
@@ -287,10 +293,10 @@ class Sheet(object):
         if self.page_count in self._used:
             # Keep try while the label is missing.
             missing = self._used.get(self.page_count, set())
-            while tuple(self._position) in missing:
+            while self._position in missing:
                 # Throw the missing information away now we have used it. This
                 # allows the _shade_remaining_missing method to work.
-                missing.discard(tuple(self._position))
+                missing.discard(self._position)
 
                 # Shade the missing label if desired.
                 if self.shade_missing:
@@ -310,16 +316,16 @@ class Sheet(object):
         """
         # Calculate the left edge of the label.
         left = self.specs.left_margin
-        left += (self.specs.label_width * (self._position[1] - 1))
+        left += (self.specs.label_width * (self._position.column - 1))
         if self.specs.column_gap:
-            left += (self.specs.column_gap * (self._position[1] - 1))
+            left += (self.specs.column_gap * (self._position.column - 1))
         left *= mm
 
         # And the bottom.
         bottom = self.specs.sheet_height - self.specs.top_margin
-        bottom -= (self.specs.label_height * self._position[0])
+        bottom -= (self.specs.label_height * self._position.row)
         if self.specs.row_gap:
-            bottom -= (self.specs.row_gap * (self._position[0] - 1))
+            bottom -= (self.specs.row_gap * (self._position.row - 1))
         bottom *= mm
 
         # Done.

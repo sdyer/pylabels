@@ -16,7 +16,9 @@
 
 from decimal import Decimal
 import json
+from collections import namedtuple
 
+Position = namedtuple('Position', ['row', 'column'])
 
 class InvalidDimension(ValueError):
     """Raised when a sheet specification has inconsistent dimensions. """
@@ -323,6 +325,12 @@ class Specification(object):
         if output == 'json':
             return json.dumps(boxes)
         return boxes
+
+    def horizontalPosIterator(self):
+        return (Position(row, column) for row in range(1, self.rows+1) for column in range(1, self.columns+1))
+
+    def verticalPosIterator(self):
+        return (Position(row, column) for col in range(1, self.columns+1) for row in range(1, self.rows+1))
 
     # Helper function to create an accessor for one of the properties.
     # attr is the 'internal' attribute e.g., _sheet_width.
