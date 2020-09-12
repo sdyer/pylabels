@@ -104,9 +104,9 @@ class Sheet(object):
         self.label_count = 0
         self.page_count = 0
         if direction == "vertical":
-            self._positionIteratorFunc = specification.verticalPosIterator()
+            self._positionIteratorFunc = specification.verticalPosIterator
         else:
-            self._positionIteratorFunc = specification.horizontalPosIterator()
+            self._positionIteratorFunc = specification.horizontalPosIterator
 
         # Background image.
         if self.specs.background_image:

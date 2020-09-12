@@ -330,7 +330,7 @@ class Specification(object):
         return (Position(row, column) for row in range(1, self.rows+1) for column in range(1, self.columns+1))
 
     def verticalPosIterator(self):
-        return (Position(row, column) for col in range(1, self.columns+1) for row in range(1, self.rows+1))
+        return (Position(row, column) for column in range(1, self.columns+1) for row in range(1, self.rows+1))
 
     # Helper function to create an accessor for one of the properties.
     # attr is the 'internal' attribute e.g., _sheet_width.
